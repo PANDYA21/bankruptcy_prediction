@@ -102,3 +102,12 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+.Rproj.user
+
+# MacOS
+.DS_Store
+
+# R
+.RData
+.Rhistory
+*.RData
