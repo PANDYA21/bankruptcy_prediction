@@ -19,13 +19,12 @@ names(separated) <- c('Measure', 'Type')
 reshaped <- cbind(reshaped, separated)
 
 reshaped$Type <- factor(reshaped$Type, levels = c('train', 'test'))
-dput(unique(reshaped$Measure))
 reshaped$Measure <- factor(reshaped$Measure, levels = c("accuracy", "precision", "recall", "f1", "auc"))
 reshaped$year <- as.numeric(gsub('year.arff', '', gsub('data/', '', reshaped$year)))
 reshaped$horizon <- 5 - reshaped$year + 1
 
 plt <- ggplot(reshaped) + geom_bar(
-  aes(x = horizon, y = value, fill = model),
+  aes(x = factor(horizon), y = value, fill = model),
   width = 0.5,
   stat = 'identity',
   position = 'dodge'
