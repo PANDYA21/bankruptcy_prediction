@@ -32,7 +32,7 @@ plt <- ggplot(imp) + geom_bar(
 ) + theme(
   axis.text.x = element_text(angle = 90)
 ) + ggtitle(label = 'Variable Importance')
-ggsave('varimp.pdf', plt, width = 12, height = 5, units = 'in', dpi = 600)
+ggsave('varimp_multic.pdf', plt, width = 12, height = 5, units = 'in', dpi = 600)
 
 
 
