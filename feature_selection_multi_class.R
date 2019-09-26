@@ -16,11 +16,12 @@ alldat$mclass <- ifelse(alldat$class == 1, alldat$year, 0)
 thisdat <- na.spline(alldat[, -c(65,66,67)])
 thisdat <- data.table(thisdat, mclass = factor(alldat$mclass))
 
+# train
 model_rf <- randomForest(mclass~., data = thisdat, ntrees = 5000, mtry = 2)
 model_rf
 varImpPlot(model_rf)
 
-
+# variable importance viz
 imp <- data.frame(model_rf$importance)
 imp$x <- rownames(imp)
 imp <- data.table(imp)
@@ -38,7 +39,19 @@ ggsave('varimp_multic.pdf', plt, width = 12, height = 5, units = 'in', dpi = 600
 
 # missForest
 require('missForest')
-model_mf <- missForest(xmis = alldat, maxiter = 10, ntree = 100)
+require('foreach')
+## create an R cluster and rfegisteregister parallel backend
+require('doParallel')
+registerDoParallel(cores=5)
+model_mf <- missForest(xmis = alldat, maxiter = 3, ntree = 100, parallelize = 'variables')
+model_mf$OOBerror
 
+# randomForest classification on impueted data
+imputed_data <- model_mf$ximp
+model_rf_imp <- randomForest(factor(mclass)~., data = imputed_data[,-c(65,66)], ntrees = 5000, mtry = 2)
+model_rf_imp
+varImpPlot(model_rf_imp)
+
+write.csv(x = imputed_data, file = 'imputed_data.csv', row.names = F)
 
 

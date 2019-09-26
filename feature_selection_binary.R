@@ -3,40 +3,51 @@ source('dependencies.R')
 # read all .arff files in data folder
 arff_files <- list.files(path = 'data', pattern = '.arff', full.names = T)
 
-lapply(arff_files[3:5], function(i_file) {
+anss <- lapply(arff_files[3:5], function(i_file) {
   dat <- read.arff(i_file)
+  # ranomForest for varImp and inital accuracy
+  thisdat <- na.spline(dat[, -c(65)])
+  thisdat <- data.table(thisdat, class = factor(dat$class))
+  model_rf <- randomForest(factor(class)~., data = thisdat, ntrees = 1500, mtry = 3)
+  # importance
+  imp <- data.frame(model_rf$importance)
+  imp$x <- rownames(imp)
+  imp <- data.table(imp)
+  imp <- imp[order(-MeanDecreaseGini)]
+  imp$x <- factor(imp$x, levels = imp$x)
+  return(list(
+    model_rf = model_rf
+  ))
 })
 
-alldat <- rbindlist(lapply(arff_files[3:5], function(i_file) {
-  dat <- read.arff(i_file)
-  dat$year <- as.numeric(gsub('year', '', gsub('data/', '', gsub('.arff', '', i_file))))
-  return(dat)
-}))
 
-# prepare classes for multi class classification
-alldat$mclass <- NA
-alldat$mclass <- ifelse(alldat$class == 1, alldat$year, 0)
+# prepare importance data to visualize
+imps <- lapply(anss, function(x) {
+  imp <- data.frame(x$model_rf$importance)
+  imp$x <- rownames(imp)
+  imp <- data.table(imp)
+  imp <- imp[order(-MeanDecreaseGini)]
+  imp$x <- factor(imp$x, levels = imp$x)
+  return(imp)
+})
 
-# ranomForest for varImp and inital accuracy
-thisdat <- na.spline(alldat[, -c(65,66,67)])
-thisdat <- data.table(thisdat, mclass = factor(alldat$mclass))
-model_rf <- randomForest(mclass~., data = thisdat, ntrees = 5000, mtry = 2)
-model_rf
-varImpPlot(model_rf)
+j = 3
+for (i in 1:length(imps)) {
+  imps[[i]]$year <- paste0('year ', j)
+  j <- j+1
+}
 
+imps <- rbindlist(imps)
 
-imp <- data.frame(model_rf$importance)
-imp$x <- rownames(imp)
-imp <- data.table(imp)
-imp <- imp[order(-MeanDecreaseGini)]
-imp$x <- factor(imp$x, levels = imp$x)
+# visualize
 require('ggplot2')
-plt <- ggplot(imp) + geom_bar(
+plt <- ggplot(imps) + geom_bar(
   aes(x = x, y = MeanDecreaseGini),
   stat = 'identity'
 ) + theme(
   axis.text.x = element_text(angle = 90)
-) + ggtitle(label = 'Variable Importance')
-ggsave('varimp_multic.pdf', plt, width = 12, height = 5, units = 'in', dpi = 600)
+) + ggtitle(label = 'Variable Importance') + facet_wrap(~year, ncol = 1)
+
+ggsave('varimp.png', plt, width = 12, height = 8, units = 'in', dpi = 600)
 
 
